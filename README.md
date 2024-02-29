@@ -10,15 +10,7 @@ This project involves analyzing WhatsApp chat data using Python libraries such a
 
 - [Requirements](#requirements)
 - [Installation](#installation)
-- [Usage](#usage)
-- [Analysis Details](#analysis-details)
-  - [Message Frequency](#message-frequency)
-  - [Active Hours](#active-hours)
-  - [Top Contributors](#top-contributors)
-  - [Word Usage Patterns](#word-usage-patterns)
-- [Visualizations](#visualizations)
-- [Contributing](#contributing)
-- [License](#license)
+
 
 ## Requirements
 
