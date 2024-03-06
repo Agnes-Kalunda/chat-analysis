@@ -4,7 +4,7 @@ from collections import Counter
 import emoji
 import re
 
-
+# Load the data from a text file
 def raw_to_df(file, key):
     split_formats = {
         '12hr': '\d{1,2}/\d{1,2}/\d{2,4},\s\d{1,2}:\d{2}\s[APap][mM]\s-\s',
@@ -25,7 +25,7 @@ def raw_to_df(file, key):
         df = pd.DataFrame({'date_time': date_time, 'user_msg': user_msg})
 
     df['date_time'] = pd.to_datetime(df['date_time'], format=datetime_formats[key])
-    df['date'] = df['date_time'].dt.date  # creates date column
+    df['date'] = df['date_time'].dt.date  # Add this line to create the 'date' column
 
     usernames = []
     msgs = []
@@ -47,26 +47,24 @@ def raw_to_df(file, key):
 
     return df
 
-
+# Replace 'your_whatsapp_data.txt' with the actual file path
 data = raw_to_df("sample.txt", '12hr')
 
 # Title
 st.title("WhatsApp Chat Analysis")
 
-# Sidebar for insights and graph checkboxes
+# Sidebar for insights and radio buttons
 st.sidebar.title("Select for Visualization")
 
-show_messages_per_day = st.sidebar.checkbox("Messages per Day")
-show_top_emojis = st.sidebar.checkbox("Top Emojis")
-show_most_active_hours = st.sidebar.checkbox("Most Active Hours")
+selected_option = st.sidebar.radio("Select Visualization", ["Messages per Day", "Top Emojis", "Most Active Hours"])
 
-# Display graphs based on checkboxes
-if show_messages_per_day:
+# Display graphs based on selected option
+if selected_option == "Messages per Day":
     st.line_chart(data.groupby('date').sum()['message_count'])
 
-if show_top_emojis:
+elif selected_option == "Top Emojis":
     st.write("Top Emojis:")
     st.write(Counter(''.join(data['emoji'])))
 
-if show_most_active_hours:
+elif selected_option == "Most Active Hours":
     st.bar_chart(data.groupby('hour').sum()['message_count'])
