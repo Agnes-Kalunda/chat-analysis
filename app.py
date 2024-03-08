@@ -6,6 +6,7 @@ import re
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import date
+import seaborn as sns
 
 
 def raw_to_df(file, key):
@@ -76,7 +77,7 @@ selected_option = st.sidebar.radio("Select Visualization", ["Messages per Day", 
 # Display graphs based on selected option
 if selected_option == "Messages per Day":
     fig, ax = plt.subplots()
-    chart = data.groupby('date').sum()['message_count'].plot(ax=ax, linestyle='-', color='b')
+    sns.lineplot(x='date', y='message_count', data=data.groupby('date').sum().reset_index(), ax=ax, linestyle='-', color='b')
     plt.xlabel("Date")
     plt.ylabel("Number of Messages")
     plt.title("Messages per Day")
@@ -87,26 +88,22 @@ if selected_option == "Messages per Day":
 elif selected_option == "Top Emojis":
     st.write("Top Emojis")
     
-    # Combines all emojis into a single string
+    # Combine all emojis into a single string
     all_emojis = ''.join(data['emoji'])
-    
     
     emoji_counts = Counter([char for char in all_emojis if char in emoji.EMOJI_DATA])
     
-
+    # Get the top 10 emojis
     top_emojis = emoji_counts.most_common(10)
     
-    
-    # DataFrame for display
+    # Create a DataFrame for display
     emoji_table = pd.DataFrame(top_emojis, columns=['Emoji', 'Count'])
     
-    
     st.table(emoji_table)
-   
 
 elif selected_option == "Most Active Hours":
     fig, ax = plt.subplots()
-    chart = data.groupby('hour').sum()['message_count'].plot(kind='bar', ax=ax, color='skyblue')
+    sns.barplot(x='hour', y='message_count', data=data.groupby('hour').sum().reset_index(), ax=ax, color='skyblue')
     plt.xlabel("Hour of the Day")
     plt.ylabel("Number of Messages")
     plt.title("Most Active Hours")
@@ -114,8 +111,9 @@ elif selected_option == "Most Active Hours":
 
 elif selected_option == "Messages per User":
     fig, ax = plt.subplots()
-    chart = data.groupby('user').sum()['message_count'].plot(kind='bar', ax=ax, color='green')
+    sns.barplot(x='user', y='message_count', data=data.groupby('user').sum().reset_index(), ax=ax)
     plt.xlabel("User")
     plt.ylabel("Number of Messages")
     plt.title("Messages per User")
+    plt.xticks(rotation=45, ha='right')  
     st.pyplot(fig)
