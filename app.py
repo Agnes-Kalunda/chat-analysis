@@ -33,27 +33,25 @@ def raw_to_df(file, key):
 
     usernames = []
     msgs = []
+    emojis = []  # Add a new column for emojis
     for i in df['user_msg']:
         a = re.split('([\w\W]+?):\s', i)
         if a[1:]:
             usernames.append(a[1])
             msgs.append(a[2])
+            emojis.append(''.join(e for e in a[2] if e in emoji.EMOJI_DATA))  # Extract emojis
         else:
             usernames.append("group_notification")
             msgs.append(a[0])
+            emojis.append(''.join(e for e in a[0] if e in emoji.EMOJI_DATA))
 
     df['user'] = usernames
     df['message'] = msgs
+    df['emoji'] = emojis  # Updates to include the emoji column
     df.drop('user_msg', axis=1, inplace=True)
 
     #  'message_count' column
-    df['message_count'] = 1
-
-    # Converts the string '2023-01-01' to datetime.date
-    date_filter = pd.to_datetime('2023-01-01').date()
-
-    # Filters messages starting from 2023
-    df = df[df['date'] >= date_filter]
+    df['message_count'] = 1  
 
     return df
 
