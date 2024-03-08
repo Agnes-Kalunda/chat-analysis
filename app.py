@@ -8,7 +8,6 @@ import matplotlib.dates as mdates
 from datetime import date
 import seaborn as sns
 
-
 def raw_to_df(file, key):
     split_formats = {
         '12hr': '\d{1,2}/\d{1,2}/\d{2,4},\s\d{1,2}:\d{2}\s[APap][mM]\s-\s',
@@ -34,13 +33,13 @@ def raw_to_df(file, key):
 
     usernames = []
     msgs = []
-    emojis = []  # Add a new column for emojis
+    emojis = []
     for i in df['user_msg']:
         a = re.split('([\w\W]+?):\s', i)
         if a[1:]:
             usernames.append(a[1])
             msgs.append(a[2])
-            emojis.append(''.join(e for e in a[2] if e in emoji.EMOJI_DATA))  # Extract emojis
+            emojis.append(''.join(e for e in a[2] if e in emoji.EMOJI_DATA))
         else:
             usernames.append("group_notification")
             msgs.append(a[0])
@@ -48,20 +47,16 @@ def raw_to_df(file, key):
 
     df['user'] = usernames
     df['message'] = msgs
-    df['emoji'] = emojis  # Updates to include the emoji column
+    df['emoji'] = emojis
     df.drop('user_msg', axis=1, inplace=True)
-
-    #  'message_count' column
-    df['message_count'] = 1  
+    df['message_count'] = 1
 
     return df
 
-
-
 data = raw_to_df("sample.txt", '12hr')
 
-# Ensures 'date' is a datetimelike object
-data['date'] = pd.to_datetime(data['date'])
+# Ensures 'date' is a datetimelike object with the correct format
+data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
 
 # Converts date to a formatted string
 data['date_str'] = data['date'].dt.strftime('%d/%m/%Y')
@@ -69,36 +64,42 @@ data['date_str'] = data['date'].dt.strftime('%d/%m/%Y')
 # Title
 st.title("WhatsApp Chat Analysis")
 
-# 
 st.sidebar.title("Select for Visualization")
 
 selected_option = st.sidebar.radio("Select Visualization", ["Messages per Day", "Top Emojis", "Most Active Hours", "Messages per User"])
 
-# Display graphs based on selected option
+
 if selected_option == "Messages per Day":
     fig, ax = plt.subplots()
-    sns.lineplot(x='date', y='message_count', data=data.groupby('date').sum().reset_index(), ax=ax, linestyle='-', color='b')
+    messages_per_day = data.groupby('date').sum().reset_index()
+    sns.lineplot(x='date', y='message_count', data=messages_per_day, ax=ax, linestyle='-', color='b')
     plt.xlabel("Date")
     plt.ylabel("Number of Messages")
     plt.title("Messages per Day")
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y'))  
-    plt.xticks(rotation=45, ha='right')  
+
+    # Sets the x-axis limits
+    start_date = pd.to_datetime("2023-04-01")  
+    plt.xlim(start_date, messages_per_day['date'].max())
+
+    #  x-axis locator and formatter
+    date_interval = 15  
+    ax.xaxis.set_major_locator(mdates.DayLocator(interval=date_interval))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y'))
+    
+    plt.xticks(rotation=90, ha='right')
     st.pyplot(fig)
 
 elif selected_option == "Top Emojis":
     st.write("Top Emojis")
-    
-    # Combine all emojis into a single string
+
     all_emojis = ''.join(data['emoji'])
-    
+
     emoji_counts = Counter([char for char in all_emojis if char in emoji.EMOJI_DATA])
-    
-    # Get the top 10 emojis
+
     top_emojis = emoji_counts.most_common(10)
-    
-    # Create a DataFrame for display
+
     emoji_table = pd.DataFrame(top_emojis, columns=['Emoji', 'Count'])
-    
+
     st.table(emoji_table)
 
 elif selected_option == "Most Active Hours":
@@ -115,5 +116,5 @@ elif selected_option == "Messages per User":
     plt.xlabel("User")
     plt.ylabel("Number of Messages")
     plt.title("Messages per User")
-    plt.xticks(rotation=45, ha='right')  
+    plt.xticks(rotation=45, ha='right')
     st.pyplot(fig)
