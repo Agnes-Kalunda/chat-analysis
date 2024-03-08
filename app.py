@@ -3,6 +3,9 @@ import pandas as pd
 from collections import Counter
 import emoji
 import re
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from datetime import date
 
 # Load the data from a text file
 def raw_to_df(file, key):
@@ -25,46 +28,87 @@ def raw_to_df(file, key):
         df = pd.DataFrame({'date_time': date_time, 'user_msg': user_msg})
 
     df['date_time'] = pd.to_datetime(df['date_time'], format=datetime_formats[key])
-    df['date'] = df['date_time'].dt.date  # Add this line to create the 'date' column
+    df['date'] = df['date_time'].dt.date  # create the 'date' column
+    df['hour'] = df['date_time'].dt.hour  # create the 'hour' column
 
     usernames = []
     msgs = []
+    emojis = []  # new column for emojis
     for i in df['user_msg']:
         a = re.split('([\w\W]+?):\s', i)
         if a[1:]:
             usernames.append(a[1])
             msgs.append(a[2])
+            emojis.append(''.join(e for e in a[2] if e in emoji.EMOJI_DATA))  # Extract emojis
         else:
             usernames.append("group_notification")
             msgs.append(a[0])
+            emojis.append(''.join(e for e in a[0] if e in emoji.EMOJI_DATA))
 
     df['user'] = usernames
     df['message'] = msgs
+    df['emoji'] = emojis  # Update to include the emoji column
     df.drop('user_msg', axis=1, inplace=True)
 
-    # Create the 'message_count' column
-    df['message_count'] = 1  # Initialize with 1 for each message
+    # the 'message_count' column
+    df['message_count'] = 1 
+
+    # Filter data to start from 2023
+    df = df[df['date'] >= date(2023, 1, 1)]
 
     return df
 
-# Replace 'your_whatsapp_data.txt' with the actual file path
 data = raw_to_df("sample.txt", '12hr')
+
+# Ensure 'date' is a datetimelike object
+data['date'] = pd.to_datetime(data['date'])
+
+# Convert date to a formatted string
+data['date_str'] = data['date'].dt.strftime('%d/%m/%Y')
 
 # Title
 st.title("WhatsApp Chat Analysis")
 
-# Sidebar for insights and radio buttons
+# 
 st.sidebar.title("Select for Visualization")
 
 selected_option = st.sidebar.radio("Select Visualization", ["Messages per Day", "Top Emojis", "Most Active Hours"])
 
 # Display graphs based on selected option
 if selected_option == "Messages per Day":
-    st.line_chart(data.groupby('date').sum()['message_count'])
+    fig, ax = plt.subplots()
+    chart = data.groupby('date').sum()['message_count'].plot(ax=ax, linestyle='-', color='b')
+    plt.xlabel("Date")
+    plt.ylabel("Number of Messages")
+    plt.title("Messages per Day")
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y'))  
+    plt.xticks(rotation=45, ha='right')  
+    st.pyplot(fig)
 
 elif selected_option == "Top Emojis":
-    st.write("Top Emojis:")
-    st.write(Counter(''.join(data['emoji'])))
+    st.write("Top Emojis")
+    
+    # Combine all emojis into a single string
+    all_emojis = ''.join(data['emoji'])
+    
+    
+    emoji_counts = Counter([char for char in all_emojis if char in emoji.EMOJI_DATA])
+    
+    # Get the top 10 emojis
+    top_emojis = emoji_counts.most_common(10)
+    
+    
+    # Create a DataFrame for display
+    emoji_table = pd.DataFrame(top_emojis, columns=['Emoji', 'Count'])
+    
+    
+    st.table(emoji_table)
+   
 
 elif selected_option == "Most Active Hours":
-    st.bar_chart(data.groupby('hour').sum()['message_count'])
+    fig, ax = plt.subplots()
+    chart = data.groupby('hour').sum()['message_count'].plot(kind='bar', ax=ax, color='skyblue')
+    plt.xlabel("Hour of the Day")
+    plt.ylabel("Number of Messages")
+    plt.title("Most Active Hours")
+    st.pyplot(fig)
